@@ -21,12 +21,9 @@ startExamTimeoutCron();
 //auth
 app.use("/api/auth",authRoutes)
 app.use("/api/student",studentRoutes)
-<<<<<<< HEAD
 app.use("/api/scribe",scribeRoutes)
 
-=======
 app.use("/api/admin",adminRoutes)
->>>>>>> upstream/main
 
 // app.get("/health", async (req, res) => {
 //   try {

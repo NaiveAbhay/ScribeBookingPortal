@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { pool } from "../config/db.js";
 
 import {HIGHEST_QUALIFICATIONS,CLASS_YEAR_VALUES,ALLOWED_LANGUAGES,STATES,DISTRICTS} from "../../utils/data.js"
+import { upsertStreamUser } from "../config/stream.js";
 
 ////////student register///////
 export const studentRegister = async (req, res) => {
@@ -126,6 +127,7 @@ export const studentRegister = async (req, res) => {
     );
 
     const userId = userResult.insertId;
+    const user = userResult[0];
 
     /* 7️⃣ Insert into students */
     await conn.execute(
@@ -139,6 +141,18 @@ export const studentRegister = async (req, res) => {
     );
 
     await conn.commit();
+
+    try {
+          await upsertStreamUser({
+                id: userId.toString(),
+                first_name: user.first_name,
+                last_name : user.last_name,
+                email : user.email,
+            });
+            console.log('Stream user created successfully for:', newStudent._id);
+        } catch (err) {
+            console.error('Error creating Stream user:', err);
+        }
 
     return res.status(201).json({
       message: "Student registered successfully",
@@ -268,6 +282,7 @@ export const scribeRegister = async (req, res) => {
     );
 
     const userId = userResult.insertId;
+    const user= userResult[0];
 
     /* 9️⃣ Insert into scribes */
     const [scribeResult] = await conn.execute(
@@ -288,6 +303,18 @@ export const scribeRegister = async (req, res) => {
     }
 
     await conn.commit();
+
+     try {
+          await upsertStreamUser({
+                id: userId.toString(),
+                first_name: user.first_name,
+                last_name : user.last_name,
+                email : user.email,
+            });
+            console.log('Stream user created successfully for:', newStudent._id);
+        } catch (err) {
+            console.error('Error creating Stream user:', err);
+        }
 
     return res.status(201).json({
       message: "Scribe registered successfully. Awaiting admin verification.",
