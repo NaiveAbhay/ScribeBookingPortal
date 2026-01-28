@@ -4,6 +4,7 @@ import { pool } from "./config/db.js";
 import {authRoutes}  from "./routes/auth.routes.js";
 import {studentRoutes}  from "./routes/student.routes.js";
 import { startExamTimeoutCron } from "./cronjob/timeoutExam.js";
+import { adminRoutes } from "./routes/admin.routes.js";
 import cookieParser from "cookie-parser";
 
 
@@ -18,10 +19,14 @@ app.use(cookieParser());
 startExamTimeoutCron();
 
 //auth
-app.use("/api/auth",authRoutes);
+app.use("/api/auth",authRoutes)
 app.use("/api/student",studentRoutes)
+<<<<<<< HEAD
 app.use("/api/scribe",scribeRoutes)
 
+=======
+app.use("/api/admin",adminRoutes)
+>>>>>>> upstream/main
 
 // app.get("/health", async (req, res) => {
 //   try {
