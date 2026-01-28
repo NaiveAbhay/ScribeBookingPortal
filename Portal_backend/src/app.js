@@ -20,6 +20,7 @@ startExamTimeoutCron();
 //auth
 app.use("/api/auth",authRoutes);
 app.use("/api/student",studentRoutes)
+app.use("/api/scribe",scribeRoutes)
 
 
 // app.get("/health", async (req, res) => {
