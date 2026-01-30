@@ -95,6 +95,33 @@ const CreateRequest = () => {
              </button>
          </div>
       )}
+      {/* --- ADD THIS STEP 3 BLOCK --- */}
+      {step === 3 && (
+        <div className={`p-10 rounded-2xl text-center ${bgClass}`}>
+          <div className="w-20 h-20 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle size={40} />
+          </div>
+          <h2 className="text-3xl font-bold mb-4">Request Sent!</h2>
+          <p className="text-slate-500 mb-8 text-lg">
+            We have sent invites to the scribes you selected. 
+            You will be notified when one of them accepts.
+          </p>
+          <div className="flex justify-center gap-4">
+            <button 
+              onClick={() => window.location.href = '/student/dashboard'} 
+              className={`px-8 py-3 rounded-xl font-bold border-2 border-slate-200 hover:bg-slate-50 text-slate-700`}
+            >
+              Go to Dashboard
+            </button>
+            <button 
+              onClick={() => window.location.reload()} 
+              className={`px-8 py-3 rounded-xl font-bold ${btnClass}`}
+            >
+              Make Another Request
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

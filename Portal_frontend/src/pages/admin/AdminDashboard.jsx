@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ShieldCheck, FileText, UserCheck, UserX, Loader2, AlertCircle, ExternalLink } from 'lucide-react';
+import { ShieldCheck, FileText, UserCheck, UserX, Loader2, AlertCircle, ExternalLink, Trash2 } from 'lucide-react';
 import api from '../../api/axios';
 
 const AdminDashboard = () => {
@@ -11,19 +11,16 @@ const AdminDashboard = () => {
     queryKey: ['pending-scribes'],
     queryFn: async () => {
       const res = await api.get('/admin/scribes?verified=false');
-      // FIX 1: Ensure we extract the array correctly
       return res.data.scribes || []; 
     }
   });
 
-  // Mutation to verify scribe
+  // Mutation to verify (Approve) scribe
   const verifyMutation = useMutation({
     mutationFn: async ({ scribeId, status }) => {
-      // FIX 2: Safety check for ID
       if (!scribeId) throw new Error("Invalid Scribe ID");
-
       return await api.post(`/admin/verify-scribe`, { 
-        scribe_id: scribeId, // Match backend key
+        scribe_id: scribeId,
         is_verified: status
       });
     },
@@ -31,7 +28,30 @@ const AdminDashboard = () => {
       queryClient.invalidateQueries(['pending-scribes']);
     },
     onError: (err) => {
-      alert("Action failed: " + (err.response?.data?.message || err.message));
+      alert("Approval failed: " + (err.response?.data?.message || err.message));
+    }
+  });
+
+  // Mutation to DELETE (Reject) scribe
+  const deleteMutation = useMutation({
+    mutationFn: async (scribeId) => {
+      if (!scribeId) throw new Error("Invalid Scribe ID");
+      
+      // Confirm before deleting
+      if (!window.confirm("Are you sure you want to PERMANENTLY delete this applicant? This cannot be undone.")) {
+        return Promise.reject(new Error("Cancelled"));
+      }
+
+      // Calls the new DELETE endpoint
+      return await api.delete(`/admin/scribe/${scribeId}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['pending-scribes']);
+    },
+    onError: (err) => {
+      if (err.message !== "Cancelled") {
+        alert("Delete failed: " + (err.response?.data?.message || err.message));
+      }
     }
   });
 
@@ -78,7 +98,7 @@ const AdminDashboard = () => {
               </div>
 
               <div className="flex flex-wrap gap-3 w-full md:w-auto">
-                {/* FIX 3: Check if URL exists before showing button */}
+                {/* Aadhaar Button with Link Check */}
                 {scribe.aadhaar_card_url && scribe.aadhaar_card_url.startsWith('http') ? (
                   <a 
                     href={scribe.aadhaar_card_url} 
@@ -94,7 +114,7 @@ const AdminDashboard = () => {
                    </span>
                 )}
 
-                {/* FIX 4: Check if URL exists for Degree */}
+                {/* Degree Button with Link Check */}
                 {scribe.qualification_doc_url && scribe.qualification_doc_url.startsWith('http') ? (
                   <a 
                     href={scribe.qualification_doc_url} 
@@ -112,17 +132,18 @@ const AdminDashboard = () => {
                 
                 <div className="flex gap-2 w-full md:w-auto md:ml-4">
                   <button 
-                    // FIX 5: Use 'scribe.scribe_id' (from backend alias) NOT 'scribe.id'
                     onClick={() => verifyMutation.mutate({ scribeId: scribe.scribe_id, status: true })}
                     className="flex-1 md:flex-none bg-green-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <UserCheck size={16} /> Approve
                   </button>
+                  
+                  {/* REJECT & DELETE BUTTON */}
                   <button 
-                    onClick={() => verifyMutation.mutate({ scribeId: scribe.scribe_id, status: false })}
-                    className="flex-1 md:flex-none bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors"
+                    onClick={() => deleteMutation.mutate(scribe.scribe_id)}
+                    className="flex-1 md:flex-none bg-red-50 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-100 transition-colors flex items-center justify-center gap-2"
                   >
-                    <UserX size={16} />
+                    <Trash2 size={16} /> Reject
                   </button>
                 </div>
               </div>

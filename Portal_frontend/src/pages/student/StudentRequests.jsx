@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Added for navigation
+import { useNavigate } from 'react-router-dom'; 
 import { useQuery } from '@tanstack/react-query';
-import { ListFilter, Calendar, MapPin, Clock, AlertCircle, Loader2, ChevronRight, MessageSquare } from 'lucide-react';
+import { ListFilter, Calendar, MapPin, Clock, AlertCircle, Loader2, ChevronRight, MessageSquare, Plus } from 'lucide-react';
 import api from '../../api/axios';
 
 const StudentRequests = () => {
   const [statusFilter, setStatusFilter] = useState(''); // Empty means 'All'
   const [page, setPage] = useState(1);
-  const navigate = useNavigate(); // Hook for navigation
+  const navigate = useNavigate(); 
 
   // Matches student.controller.js -> getRequests
   const { data, isLoading, isError } = useQuery({
@@ -39,19 +39,29 @@ const StudentRequests = () => {
           <p className="text-slate-500">Track and manage your scribe bookings</p>
         </div>
         
-        <div className="flex items-center gap-3 bg-white p-2 rounded-xl border shadow-sm">
-          <ListFilter size={18} className="text-slate-400 ml-2" />
-          <select 
-            value={statusFilter} 
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="bg-transparent border-none focus:ring-0 text-sm font-semibold pr-8"
+        <div className="flex items-center gap-3">
+          {/* --- NEW BUTTON LOCATION: Always visible --- */}
+          <button 
+            onClick={() => navigate('/student/create-request')}
+            className="bg-primary text-white px-4 py-2 rounded-lg font-bold hover:bg-primary-dark transition-colors flex items-center gap-2 shadow-sm"
           >
-            <option value="">All Requests</option>
-            <option value="OPEN">Open</option>
-            <option value="ACCEPTED">Accepted</option>
-            <option value="COMPLETED">Completed</option>
-            <option value="TIMED_OUT">Timed Out</option>
-          </select>
+            <Plus size={20} /> New Request
+          </button>
+
+          <div className="flex items-center gap-3 bg-white p-2 rounded-xl border shadow-sm">
+            <ListFilter size={18} className="text-slate-400 ml-2" />
+            <select 
+              value={statusFilter} 
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+              className="bg-transparent border-none focus:ring-0 text-sm font-semibold pr-8 cursor-pointer outline-none"
+            >
+              <option value="">All Requests</option>
+              <option value="OPEN">Open</option>
+              <option value="ACCEPTED">Accepted</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="TIMED_OUT">Timed Out</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -66,12 +76,7 @@ const StudentRequests = () => {
           <Calendar size={48} className="mx-auto text-slate-300 mb-4" />
           <h3 className="text-lg font-bold text-slate-900">No requests found</h3>
           <p className="text-slate-500 mb-6">You haven't created any exam requests in this category yet.</p>
-          <button 
-            onClick={() => navigate('/student/create-request')}
-            className="bg-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-primary-dark transition-colors"
-          >
-            Create New Request
-          </button>
+          {/* Duplicate button here is fine for empty states, or you can remove it since it's in the header now */}
         </div>
       ) : (
         <div className="space-y-4">

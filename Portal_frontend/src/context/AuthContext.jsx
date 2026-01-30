@@ -1,12 +1,37 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
+import api from '../api/axios'; // Import your axios instance
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // Stores { role: 'STUDENT' | 'SCRIBE' }
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true); // Add loading state
 
-  const login = (userData) => setUser(userData);
-  const logout = () => setUser(null);
+  useEffect(() => {
+    // Check localStorage on load
+    const storedUser = localStorage.getItem("scribe_user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+    setLoading(false);
+  }, []);
+
+  const login = (userData) => {
+    setUser(userData);
+    localStorage.setItem("scribe_user", JSON.stringify(userData));
+  };
+
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout'); // Clear cookie on backend
+    } catch (err) {
+      console.error("Logout failed", err);
+    }
+    setUser(null);
+    localStorage.removeItem("scribe_user");
+  };
+
+  if (loading) return null; // Prevent flickering
 
   return (
     <AuthContext.Provider value={{ user, login, logout }}>

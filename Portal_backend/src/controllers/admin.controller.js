@@ -191,3 +191,19 @@ export const viewRequests = async (req, res) => {
     conn.release();
   }
 };
+
+//To delete scribe
+export const deleteScribe = async (req, res) => {
+  const conn = await pool.getConnection();
+  try {
+    const { id } = req.params;
+    // Delete user (cascade will remove scribe entry)
+    await conn.execute("DELETE FROM users WHERE id = (SELECT user_id FROM scribes WHERE id = ?)", [id]);
+    res.status(200).json({ message: "Scribe deleted successfully" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Error deleting scribe" });
+  } finally {
+    conn.release();
+  }
+};
