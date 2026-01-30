@@ -1,20 +1,17 @@
 import express from "express";
-export const authRoutes=express.Router();      
+import { login, studentRegister, scribeRegister, logout } from "../controllers/auth.controller.js";
+// Import BOTH chat controllers
+import { getStreamToken, getChatParticipants } from "../controllers/chat.controller.js";
+import { userMiddleware } from "../middleware/user.middleware.js";
 
-import {studentRegister,scribeRegister,login,logout} from "../controllers/auth.controller.js"
-import { getStreamToken } from "../controllers/chat.controller.js";
+export const authRoutes = express.Router();
 
-//Registration
-authRoutes.post("/studentRegister",studentRegister)
-authRoutes.post("/scribeRegister",scribeRegister)
+authRoutes.post("/studentRegister", studentRegister);
+authRoutes.post("/scribeRegister", scribeRegister);
+authRoutes.post("/login", login);
+authRoutes.post("/logout", logout);
 
-//login and logout
-authRoutes.post("/login",login)
-authRoutes.post("/logout",logout)
-authRoutes.post("/streamToken",getStreamToken)
+authRoutes.post("/streamToken", userMiddleware, getStreamToken);
 
-//check previous log in instance before login
-// authRoutes.post("/check",userMiddleware,async(req,res)=>{
-//     res.json({"Name":"Aayush Sharma"})
-// })
-
+// --- NEW ROUTE ---
+authRoutes.get("/chat/participants/:requestId", userMiddleware, getChatParticipants);

@@ -1,33 +1,35 @@
-import { StreamChat } from 'stream-chat';
-import 'dotenv/config';
+import { StreamChat } from "stream-chat";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const apiKey = process.env.STREAM_API_KEY;
 const apiSecret = process.env.STREAM_API_SECRET;
 
 if (!apiKey || !apiSecret) {
-  throw new Error('STREAM_API_KEY or STREAM_API_SECRET missing in .env');
+  throw new Error("Stream keys missing in .env");
 }
 
-const streamClient = StreamChat.getInstance(apiKey, apiSecret);
+// 1. Export the client (Used by Chat Controller)
+export const streamClient = StreamChat.getInstance(apiKey, apiSecret);
 
-// Create or update user
-export const upsertStreamUser = async (userData) => {
-  try {
-    await streamClient.upsertUsers([userData]);
-    return userData;
-  } catch (err) {
-    console.error('Error creating Stream user:', err);
-    throw err;
-  }
+// 2. Export Token Generator (Used by Login/Chat)
+export const generateStreamToken = (userId) => {
+  return streamClient.createToken(userId);
 };
 
-// Generate token
-export const generateStreamToken = (userId) => {
+// 3. Export User Syncer (RESTORED - Used by Register)
+export const upsertStreamUser = async (user) => {
   try {
-    const userIdStr = userId.toString();
-    return streamClient.createToken(userIdStr);
-  } catch (err) {
-    console.error('Error generating Stream token:', err);
-    return null;
+    await streamClient.upsertUser({
+      id: user.id.toString(),
+      name: `${user.first_name} ${user.last_name || ""}`.trim(),
+      email: user.email,
+      image: user.profile_image_url || `https://ui-avatars.com/api/?name=${user.first_name}+${user.last_name}`,
+      role: "user" 
+    });
+  } catch (error) {
+    console.error("Error syncing user to Stream:", error);
+    // We don't throw here to prevent breaking the registration flow if Stream fails
   }
 };

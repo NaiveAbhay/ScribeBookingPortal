@@ -2,6 +2,8 @@ import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AccessibilityProvider } from './context/AccessibilityContext';
+import { ToastProvider } from './context/ToastContext'; // <--- NEW IMPORT
+import GlobalCallListener from './components/GlobalCallListener'; // <--- NEW IMPORT
 import Layout from './components/Layout';
 
 // --- Page Imports ---
@@ -41,83 +43,89 @@ function App() {
   return (
     <AccessibilityProvider>
       <AuthProvider>
-        <Routes>
-          {/* --- Public Routes (Now wrapped in Layout) --- */}
-          <Route path="/login" element={<Layout><Login /></Layout>} />
-          <Route path="/register-select" element={<Layout><RegisterSelect /></Layout>} />
-          <Route path="/register/student" element={<Layout><StudentRegister /></Layout>} />
-          <Route path="/register/scribe" element={<Layout><ScribeRegister /></Layout>} />
-          <Route path="/accept-request" element={<Layout><AcceptRequest /></Layout>} />
-          
-          {/* --- Protected Student Routes --- */}
-          <Route 
-            path="/student/dashboard" 
-            element={
-              <ProtectedRoute allowedRole="STUDENT">
-                <StudentRequests />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/student/create-request" 
-            element={
-              <ProtectedRoute allowedRole="STUDENT">
-                <CreateRequest />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/student/requests" 
-            element={
-              <ProtectedRoute allowedRole="STUDENT">
-                <StudentRequests />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/student/feedback/:requestId" 
-            element={
-              <ProtectedRoute allowedRole="STUDENT">
-                <SubmitFeedback />
-              </ProtectedRoute>
-            } 
-          />
+        {/* Wrap app in ToastProvider to enable notifications */}
+        <ToastProvider>
+          {/* Global Listener detects incoming calls anywhere in the app */}
+          <GlobalCallListener />
 
-          {/* --- Protected Scribe Routes --- */}
-          <Route 
-            path="/scribe/dashboard" 
-            element={
-              <ProtectedRoute allowedRole="SCRIBE">
-                <ScribeDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/scribe/availability" 
-            element={
-              <ProtectedRoute allowedRole="SCRIBE">
-                <ScribeAvailability />
-              </ProtectedRoute>
-            } 
-          />
+          <Routes>
+            {/* --- Public Routes (Now wrapped in Layout) --- */}
+            <Route path="/login" element={<Layout><Login /></Layout>} />
+            <Route path="/register-select" element={<Layout><RegisterSelect /></Layout>} />
+            <Route path="/register/student" element={<Layout><StudentRegister /></Layout>} />
+            <Route path="/register/scribe" element={<Layout><ScribeRegister /></Layout>} />
+            <Route path="/accept-request" element={<Layout><AcceptRequest /></Layout>} />
+            
+            {/* --- Protected Student Routes --- */}
+            <Route 
+              path="/student/dashboard" 
+              element={
+                <ProtectedRoute allowedRole="STUDENT">
+                  <StudentRequests />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/student/create-request" 
+              element={
+                <ProtectedRoute allowedRole="STUDENT">
+                  <CreateRequest />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/student/requests" 
+              element={
+                <ProtectedRoute allowedRole="STUDENT">
+                  <StudentRequests />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/student/feedback/:requestId" 
+              element={
+                <ProtectedRoute allowedRole="STUDENT">
+                  <SubmitFeedback />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* --- Shared Routes --- */}
-          <Route path="/chat/:requestId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-          <Route path="/video/:requestId" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
+            {/* --- Protected Scribe Routes --- */}
+            <Route 
+              path="/scribe/dashboard" 
+              element={
+                <ProtectedRoute allowedRole="SCRIBE">
+                  <ScribeDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/scribe/availability" 
+              element={
+                <ProtectedRoute allowedRole="SCRIBE">
+                  <ScribeAvailability />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* --- Admin Routes --- */}
-          <Route 
-            path="/admin/dashboard" 
-            element={
-              <ProtectedRoute allowedRole="ADMIN">
-                <AdminDashboard />
-              </ProtectedRoute>
-            } 
-          />
+            {/* --- Shared Routes --- */}
+            <Route path="/chat/:requestId" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
+            <Route path="/video/:requestId" element={<ProtectedRoute><VideoCall /></ProtectedRoute>} />
 
-          {/* --- Redirects --- */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-        </Routes>
+            {/* --- Admin Routes --- */}
+            <Route 
+              path="/admin/dashboard" 
+              element={
+                <ProtectedRoute allowedRole="ADMIN">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* --- Redirects --- */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </ToastProvider>
       </AuthProvider>
     </AccessibilityProvider>
   );
