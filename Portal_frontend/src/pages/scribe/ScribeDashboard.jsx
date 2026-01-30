@@ -1,164 +1,138 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { 
-  CheckCircle, 
-  Calendar, 
-  Star, 
-  Users, 
-  Clock, 
-  MapPin, 
-  Loader2, 
-  AlertCircle,
-  ExternalLink
-} from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Calendar, Clock, MapPin, User, Loader2, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
 import api from '../../api/axios';
+import { useNavigate } from 'react-router-dom';
 
 const ScribeDashboard = () => {
-  // Fetch Scribe Profile & Stats
-  const { data: scribeData, isLoading: loadingProfile } = useQuery({
-    queryKey: ['scribe-profile'],
-    queryFn: async () => (await api.get('/scribe/profile')).data
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  // 1. Fetch Accepted Bookings
+  const { data: requests = [], isLoading: loadingBookings } = useQuery({
+    queryKey: ['scribe-bookings'],
+    queryFn: async () => (await api.get('/scribe/get-request?status=ACCEPTED')).data.requests || []
   });
 
-  // Fetch Assigned Students/Exams
-  const { data: requestData, isLoading: loadingRequests } = useQuery({
-    queryKey: ['scribe-assigned-requests'],
-    queryFn: async () => (await api.get('/scribe/get-request')).data
+  // 2. Fetch Pending Invites (NEW)
+  const { data: invites = [], isLoading: loadingInvites } = useQuery({
+    queryKey: ['scribe-invites'],
+    queryFn: async () => (await api.get('/scribe/invites')).data.invites || []
   });
 
-  if (loadingProfile || loadingRequests) {
-    return (
-      <div className="flex justify-center items-center min-h-[60vh]">
-        <Loader2 className="animate-spin text-primary" size={40} />
-      </div>
-    );
-  }
+  // Action: Accept
+  const acceptMutation = useMutation({
+    mutationFn: async (token) => await api.post('/scribe/acceptRequest', { token }),
+    onSuccess: () => {
+      alert("Request Accepted!");
+      queryClient.invalidateQueries(['scribe-bookings']);
+      queryClient.invalidateQueries(['scribe-invites']);
+    },
+    onError: (err) => alert(err.response?.data?.message || "Failed to accept")
+  });
 
-  const { profile, stats } = scribeData;
+  // Action: Reject
+  const rejectMutation = useMutation({
+    mutationFn: async (token) => await api.post('/scribe/reject-invite', { token }),
+    onSuccess: () => queryClient.invalidateQueries(['scribe-invites'])
+  });
+
+  if (loadingBookings || loadingInvites) return <div className="flex justify-center p-20"><Loader2 className="animate-spin text-primary" size={40} /></div>;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      {/* Header & Stats Section */}
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-900">Welcome, {profile.first_name}!</h2>
-          <p className="text-slate-500">Manage your volunteer commitments and availability.</p>
-        </div>
-        
-        <div className="flex gap-4">
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 px-6">
-            <div className="p-3 bg-yellow-50 text-yellow-600 rounded-xl">
-              <Star size={24} fill="currentColor" />
-            </div>
-            <div>
-              <p className="text-sm text-slate-500 font-medium">Rating</p>
-              <p className="text-xl font-bold">{Number(profile.avg_rating).toFixed(1)} / 5</p>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
-              <Calendar size={24} />
-            </div>
-            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded">Next 30 Days</span>
-          </div>
-          <h3 className="text-slate-500 text-sm font-medium">Upcoming Exams</h3>
-          <p className="text-3xl font-bold text-slate-900">{stats.upcoming_exams}</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-green-50 text-green-600 rounded-xl">
-              <CheckCircle size={24} />
-            </div>
-          </div>
-          <h3 className="text-slate-500 text-sm font-medium">Completed Assignments</h3>
-          <p className="text-3xl font-bold text-slate-900">{stats.total_exams}</p>
-        </div>
-
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-              <Users size={24} />
-            </div>
-          </div>
-          <h3 className="text-slate-500 text-sm font-medium">Students Helped</h3>
-          <p className="text-3xl font-bold text-slate-900">{stats.total_exams}</p>
-        </div>
-      </div>
-
-      {/* Assigned Bookings List */}
-      <section className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-        <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-          <h3 className="text-xl font-bold text-slate-900">Assigned Students</h3>
-          <button 
-            onClick={() => window.location.href='/scribe/availability'}
-            className="text-sm font-bold text-primary hover:underline"
-          >
-            Update Availability
-          </button>
-        </div>
-
-        <div className="divide-y divide-slate-100">
-          {requestData?.requests.length === 0 ? (
-            <div className="p-12 text-center">
-              <Users className="mx-auto text-slate-300 mb-4" size={48} />
-              <p className="text-slate-500 font-medium">No assigned students yet.</p>
-              <p className="text-xs text-slate-400">Keep an eye on your email for incoming invites.</p>
-            </div>
-          ) : (
-            requestData.requests.map((req) => (
-              <div key={req.id} className="p-6 hover:bg-slate-50 transition-colors">
-                <div className="flex flex-col md:flex-row justify-between gap-6">
-                  <div className="flex gap-4">
-                    <div className="w-14 h-14 bg-primary text-white rounded-2xl flex items-center justify-center font-bold text-xl shrink-0">
-                      {req.student_name[0]}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-lg text-slate-900">{req.student_name}</h4>
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <Calendar size={14} className="text-primary" /> 
-                          {new Date(req.exam_date).toLocaleDateString()}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Clock size={14} className="text-primary" /> 
-                          {req.exam_time}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <MapPin size={14} className="text-primary" /> 
-                          {req.city}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <a 
-                      href={`tel:${req.student_phone}`}
-                      className="flex-1 md:flex-none text-center bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition-colors"
-                    >
-                      Call Student
-                    </a>
-                    // Example for ScribeDashboard.jsx
-<button 
-  onClick={() => navigate(`/chat/${req.id}`)}
-  className="bg-primary text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2"
->
-  Start Chat
-</button>
-                  </div>
+    <div className="max-w-6xl mx-auto py-8 px-4">
+      
+      {/* --- NEW SECTION: PENDING INVITES --- */}
+      {invites.length > 0 && (
+        <div className="mb-10">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4 flex items-center gap-2">
+            <AlertCircle className="text-orange-500" /> Pending Requests
+          </h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            {invites.map((invite) => (
+              <div key={invite.token} className="bg-orange-50 p-6 rounded-2xl border border-orange-200">
+                <h3 className="font-bold text-lg text-slate-900">Request from {invite.student_name}</h3>
+                <div className="mt-2 text-sm text-slate-700 space-y-1">
+                   <p className="flex items-center gap-2"><Calendar size={14}/> {new Date(invite.exam_date).toLocaleDateString()}</p>
+                   <p className="flex items-center gap-2"><Clock size={14}/> {invite.exam_time || 'Time TBD'}</p>
+                   <p className="flex items-center gap-2"><MapPin size={14}/> {invite.city}, {invite.district}</p>
+                </div>
+                <div className="flex gap-3 mt-4">
+                  <button 
+                    onClick={() => acceptMutation.mutate(invite.token)}
+                    className="flex-1 bg-green-600 text-white py-2 rounded-xl font-bold text-sm hover:bg-green-700 flex justify-center items-center gap-2"
+                  >
+                    <CheckCircle size={16}/> Accept
+                  </button>
+                  <button 
+                    onClick={() => rejectMutation.mutate(invite.token)}
+                    className="flex-1 bg-red-100 text-red-600 py-2 rounded-xl font-bold text-sm hover:bg-red-200 flex justify-center items-center gap-2"
+                  >
+                    <XCircle size={16}/> Decline
+                  </button>
                 </div>
               </div>
-            ))
-          )}
+            ))}
+          </div>
         </div>
-      </section>
+      )}
+
+      {/* --- EXISTING SECTION: UPCOMING EXAMS --- */}
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-slate-900">My Upcoming Exams</h2>
+        <p className="text-slate-500 mt-2">Manage your accepted scribe duties.</p>
+      </div>
+
+      {requests.length === 0 ? (
+        <div className="text-center bg-white py-20 rounded-2xl border border-dashed border-slate-300">
+          <Calendar size={48} className="mx-auto text-slate-300 mb-4" />
+          <h3 className="text-lg font-bold text-slate-900">No upcoming exams</h3>
+          <p className="text-slate-500">You haven't accepted any requests yet.</p>
+        </div>
+      ) : (
+        <div className="grid md:grid-cols-2 gap-6">
+          {requests.map((req) => (
+            <div key={req.id} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900">{req.student_name}</h3>
+                  <div className="flex items-center gap-2 text-slate-500 text-sm mt-1">
+                     <User size={14} /> 
+                     <span>{req.student_phone || 'No Phone'}</span>
+                  </div>
+                </div>
+                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold border border-green-200">
+                  CONFIRMED
+                </span>
+              </div>
+
+              <div className="space-y-3 border-t border-slate-50 pt-4">
+                <div className="flex items-center gap-3 text-slate-700">
+                  <Calendar size={18} className="text-primary" />
+                  <span className="font-semibold">{new Date(req.exam_date).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-700">
+                  <Clock size={18} className="text-primary" />
+                  <span className="font-semibold">{req.exam_time}</span>
+                </div>
+                <div className="flex items-center gap-3 text-slate-700">
+                  <MapPin size={18} className="text-primary" />
+                  <span className="capitalize">{req.city}, {req.district}</span>
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-3">
+                <button 
+                  onClick={() => navigate(`/chat/${req.id}`)}
+                  className="flex-1 bg-primary text-white py-2 rounded-xl font-bold hover:bg-primary-dark transition-colors"
+                >
+                  Chat with Student
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

@@ -56,14 +56,14 @@ const ScribeAvailability = () => {
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase">Reason (Optional)</label>
                 <select 
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  className="w-full mt-1 p-3 border border-slate-200 rounded-xl text-sm"
-                >
-                  <option value="PERSONAL">Personal Work</option>
-                  <option value="TRAVEL">Traveling</option>
-                  <option value="EXAM">My Own Exam</option>
-                </select>
+  value={reason}
+  onChange={(e) => setReason(e.target.value)}
+  className="w-full mt-1 p-3 border border-slate-200 rounded-xl text-sm outline-none focus:border-primary"
+>
+  {/* The schema ONLY supports 'PERSONAL' for manual entry */}
+  <option value="PERSONAL">Personal / Private Reason</option>
+  {/* If you want to support others, you must ALTER TABLE first. For now, we map all manual reasons to PERSONAL */}
+</select>
               </div>
               <button 
                 type="submit" 

@@ -211,3 +211,75 @@ export const setUnavailability = async (req, res) => {
         conn.release();
     }
 };
+/**
+ * Get Pending Invites
+ * Fetches requests sent specifically to this scribe
+ */
+export const getInvites = async (req, res) => {
+    const conn = await pool.getConnection();
+    try {
+        const userId = req.user.user_id;
+
+        // Get scribe ID
+        const [scribes] = await conn.execute("SELECT id FROM scribes WHERE user_id = ?", [userId]);
+        if (!scribes.length) return res.status(404).json({ message: "Scribe not found" });
+        const scribeId = scribes[0].id;
+
+        const [invites] = await conn.execute(
+            `SELECT 
+                ri.token, 
+                er.id AS request_id,
+                er.exam_date,
+                er.exam_time,
+                er.city,
+                er.district,
+                er.state,
+                u.first_name AS student_name,
+                u.last_name AS student_last_name
+             FROM request_invites ri
+             JOIN exam_requests er ON ri.exam_request_id = er.id
+             JOIN students st ON er.student_id = st.id
+             JOIN users u ON st.user_id = u.id
+             WHERE ri.scribe_id = ? 
+               AND ri.used = FALSE 
+               AND ri.expires_at > NOW()
+               AND er.status = 'OPEN'`,
+            [scribeId]
+        );
+
+        return res.status(200).json({ invites });
+    } catch (err) {
+        console.error("Get invites error:", err);
+        return res.status(500).json({ message: "Internal server error" });
+    } finally {
+        conn.release();
+    }
+};
+
+/**
+ * Reject Invite
+ * Simply deletes the invite so it no longer appears
+ */
+export const rejectInvite = async (req, res) => {
+    const conn = await pool.getConnection();
+    try {
+        const userId = req.user.user_id;
+        const { token } = req.body;
+
+        // Get scribe ID for security (ensure they own the invite)
+        const [scribes] = await conn.execute("SELECT id FROM scribes WHERE user_id = ?", [userId]);
+        const scribeId = scribes[0].id;
+
+        await conn.execute(
+            "DELETE FROM request_invites WHERE token = ? AND scribe_id = ?",
+            [token, scribeId]
+        );
+
+        return res.status(200).json({ message: "Request declined" });
+    } catch (err) {
+        console.error("Reject error:", err);
+        return res.status(500).json({ message: "Internal server error" });
+    } finally {
+        conn.release();
+    }
+};
