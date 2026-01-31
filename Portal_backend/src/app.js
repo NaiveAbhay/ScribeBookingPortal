@@ -37,6 +37,15 @@ app.use("/api/admin", adminRoutes);
 startExamTimeoutCron();
 
 /* ===== SERVER ===== */
+(async () => {
+  try {
+    const [rows] = await pool.query("SELECT 1");
+    console.log("✅ MySQL connected");
+  } catch (err) {
+    console.error("❌ DB connection failed:", err.message);
+  }
+})();
+
 app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);
 });
